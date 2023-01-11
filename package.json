@@ -1,0 +1,24 @@
+{
+  "name": "test-ci",
+  "version": "1.0.0",
+  "description": "test GitHub Action Repo",
+  "scripts": {
+    "start": "dumi dev",
+    "build": "dumi build"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Wxh16144/test-ci.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Wxh16144/test-ci/issues"
+  },
+  "homepage": "https://github.com/Wxh16144/test-ci#readme",
+  "packageManager": "npm@7.0.0",
+  "devDependencies": {
+    "dumi": "^2.1.3"
+  }
+}

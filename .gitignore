@@ -1,0 +1,10 @@
+node_modules
+dist
+
+# dumi
+.dumi/tmp
+.dumi/tmp-test
+.dumi/tmp-production
+
+package-lock.json
+pnpm-lock.yaml
