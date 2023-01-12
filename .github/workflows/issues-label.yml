@@ -19,7 +19,7 @@ jobs:
 
       - name: test-toggle-label
         uses: wxh16144/issues-helper@wuxh/feat-toggle_labels
-        if: (contains(github.event.issue.body, 'auto-close') == false)
+        if: (contains(github.event.issue.body, 'auto-close') == true)
         with:
           actions: "toggle-labels,close-issue"
           token: ${{ secrets.GITHUB_TOKEN }}
