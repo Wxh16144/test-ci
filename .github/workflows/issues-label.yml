@@ -9,14 +9,19 @@ jobs:
     permissions:
       issues: write
     steps:
-    
-      - name: add Label
-        uses: actions/github-script@v6
+      - name: Add labels
+        uses: actions-cool/issues-helper@v3
         with:
-          script: |
-            github.rest.issues.addLabels({
-              issue_number: context.issue.number,
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              labels: ["triage"]
-            })
+          actions: 'add-labels'
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          labels: 'unread'
+
+      - name: test-toggle-label
+        uses: wxh16144/issues-helper@wuxh/feat-toggle_labels
+        if: (contains(github.event.issue.body, 'auto-close') == false)
+        with:
+          actions: "toggle-labels,close-issue"
+          token: ${{ secrets.GITHUB_TOKEN }}
+          issue-number: ${{ github.event.issue.number }}
+          labels: "unread,label,label-1,label-2"
