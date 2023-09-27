@@ -2,18 +2,16 @@ name: Trigger Argos manually
 
 on: workflow_dispatch
 
-permissions:
-  contents: read
-
 jobs:
   trigger_argos_manually:
     permissions:
-      pull-requests: write  # for actions-cool/verify-files-modify to update status of PRs
+      contents: read
+      actions: write
     runs-on: ubuntu-latest
-
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        
       - name: Trigger Argos manually
         run: |
           git config --local user.name 'github-actions[bot]'
