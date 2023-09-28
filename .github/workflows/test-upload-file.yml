@@ -1,0 +1,23 @@
+name: Upload artifact
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create artifact
+        run: |
+          mkdir -p ./artifact
+          echo "Hello world" > ./artifact/hello.txt
+          echo "Hello world2" > ./artifact/hello2.txt
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: my-artifact
+          path: ./artifact
