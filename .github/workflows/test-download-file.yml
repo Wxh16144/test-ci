@@ -19,6 +19,7 @@ jobs:
           workflow: ${{ github.event.workflow_run.workflow_id }}
           run_id: ${{ github.event.workflow_run.id }}
           name: my-artifact
+          path: ./artifact
 
       - name: View Directory tree
         run: |
