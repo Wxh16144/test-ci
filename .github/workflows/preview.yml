@@ -8,17 +8,17 @@ on:
   workflow_dispatch:
     inputs:
       build_res:
-        description: "构建结果"
+        description: "构建是否失败"
         type: boolean
         required: true
         default: true
       test_res:
-        description: "测试结果"
+        description: "测试是否失败"
         type: boolean
         required: true
         default: true
       deploy_res:
-        description: "部署结果"
+        description: "部署是否失败"
         type: boolean
         required: true
         default: true
@@ -49,7 +49,7 @@ jobs:
     needs: setup
     steps:
       - name: input
-        run: exit ${{ inputs.build_res == 'true' && 0 || 1 }}
+        run: exit ${{ inputs.build_res }}
 
   site-test:
     name: site E2E test
@@ -57,7 +57,7 @@ jobs:
     needs: build-site
     steps:
       - name: input
-        run: exit ${{ inputs.test_res == 'true' && 0 || 1 }}
+        run: exit ${{ inputs.test_res }}
 
   preview-deploy:
     name: deploy preview
@@ -65,7 +65,7 @@ jobs:
     needs: build-site
     steps:
       - name: input
-        run: exit ${{ inputs.deploy_res == 'true' && 0 || 1 }}
+        run: exit ${{ inputs.deploy_res }}
 
   preview-end:
     name: build preview result
