@@ -8,46 +8,33 @@ on:
   workflow_dispatch:
     inputs:
       build_res:
-        description: '构建结果'
+        description: "构建结果"
         type: boolean
         required: true
         default: true
       test_res:
-        description: '测试结果'
+        description: "测试结果"
         type: boolean
         required: true
         default: true
       deploy_res:
-        description: '部署结果'
+        description: "部署结果"
         type: boolean
         required: true
         default: true
-
 
 # Cancel prev CI if new commit come
 concurrency:
   group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
   cancel-in-progress: true
 
-permissions:
-  contents: read
-
 jobs:
   preview-start:
-    permissions:
-      issues: write # for actions-cool/maintain-one-comment to modify or create issue comments
-      pull-requests: write # for actions-cool/maintain-one-comment to modify or create PR comments
-    name: preview start
+    name: start
     runs-on: ubuntu-latest
     steps:
-      - name: update status comment
-        uses: actions-cool/maintain-one-comment@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            ![Prepare preview](https://user-images.githubusercontent.com/5378891/72351368-2c979e00-371b-11ea-9652-eb4e825d745e.gif)
-            <!-- AUTO_PREVIEW_HOOK -->
-          body-include: "<!-- AUTO_PREVIEW_HOOK -->"
+      - name: input
+        run: echo 'start'
 
   setup:
     name: setup
@@ -55,80 +42,12 @@ jobs:
     steps:
       - name: echo
         run: echo 1
-      # - name: checkout
-      #   uses: actions/checkout@v4
-
-      # - name: cache package-lock.json
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: package-temp-dir
-      #     key: lock-${{ github.sha }}
-
-      # - name: create package-lock.json
-      #   run: npm i --package-lock-only --ignore-scripts
-
-      # - name: hack for single file
-      #   run: |
-      #     if [ ! -d "package-temp-dir" ]; then
-      #       mkdir package-temp-dir
-      #     fi
-      #     cp package-lock.json package-temp-dir
-      # - name: cache node_modules
-      #   id: node_modules_cache_id
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: node_modules
-      #     key: node_modules-${{ hashFiles('**/package-temp-dir/package-lock.json') }}
-
-      # - name: install
-      #   if: steps.node_modules_cache_id.outputs.cache-hit != 'true'
-      #   run: npm ci
 
   build-site:
     name: build preview
     runs-on: ubuntu-latest
     needs: setup
     steps:
-      # - name: checkout
-      #   uses: actions/checkout@v4
-
-      # - name: restore cache from package-lock.json
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: package-temp-dir
-      #     key: lock-${{ github.sha }}
-
-      # - name: restore cache from node_modules
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: node_modules
-      #     key: node_modules-${{ hashFiles('**/package-temp-dir/package-lock.json') }}
-
-      # - name: npm run site
-      #   id: site
-      #   run: npm run site
-      #   env:
-      #     SITE_ENV: development
-      #     NODE_OPTIONS: "--max_old_space_size=4096 --openssl-legacy-provider"
-
-      # - name: upload site artifact
-      #   uses: actions/upload-artifact@v3
-      #   with:
-      #     name: site
-      #     path: _site/
-      #     retention-days: 5
-
-      # Upload PR id for next workflow use
-      - name: Save PR number
-        if: ${{ always() }}
-        run: echo ${{ github.event.number }} > ./pr-id.txt
-
-      - name: Upload PR number
-        if: ${{ always() }}
-        uses: actions/upload-artifact@v3
-        with:
-          name: pr
-          path: ./pr-id.txt
       - name: input
         run: exit ${{ inputs.build_res == 'true' && 0 || 1 }}
 
@@ -139,59 +58,14 @@ jobs:
     steps:
       - name: input
         run: exit ${{ inputs.test_res == 'true' && 0 || 1 }}
-      # - name: checkout
-      #   uses: actions/checkout@v4
-
-      # - name: restore cache from package-lock.json
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: package-temp-dir
-      #     key: lock-${{ github.sha }}
-
-      # - name: restore cache from node_modules
-      #   uses: actions/cache@v3
-      #   with:
-      #     path: node_modules
-      #     key: node_modules-${{ hashFiles('**/package-temp-dir/package-lock.json') }}
-
-      # - name: download site artifact
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: site
-      #     path: _site
-
-      # - name: run e2e test
-      #   run: npm run site:test
 
   preview-deploy:
     name: deploy preview
     runs-on: ubuntu-latest
     needs: build-site
     steps:
-      # We need get PR id first
-      - name: download pr artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: pr
-
-      # Save PR id to output
-      - name: save PR id
-        id: pr
-        run: echo "id=$(<pr-id.txt)" >> $GITHUB_OUTPUT
-
       - name: input
         run: exit ${{ inputs.deploy_res == 'true' && 0 || 1 }}
-      # # Download site artifact
-      # - name: download site artifact
-      #   uses: actions/download-artifact@v3
-      #   with:
-      #     name: site
-
-      # - name: upload surge service
-      #   id: deploy
-      #   run: |
-      #     export DEPLOY_DOMAIN=https://preview-${{ steps.pr.outputs.id }}-ant-design.surge.sh
-      #     npx surge --project ./ --domain $DEPLOY_DOMAIN --token ${{ secrets.SURGE_TOKEN }}
 
   preview-end:
     name: build preview result
@@ -200,37 +74,11 @@ jobs:
       - build-site
       - preview-deploy
     if: always()
-    permissions:
-      issues: write # for actions-cool/maintain-one-comment to modify or create issue comments
-      pull-requests: write # for actions-cool/maintain-one-comment to modify or create PR comments
     steps:
-      - name: download pr artifact
-        uses: actions/download-artifact@v3
-        with:
-          name: pr
-
-      - name: save PR id
-        id: pr
-        run: echo "id=$(<pr-id.txt)" >> $GITHUB_OUTPUT
-
       - name: success comment
         if: needs.build-site.result == 'success' && needs.preview-deploy.result == 'success'
-        uses: actions-cool/maintain-one-comment@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            [<img width="306" alt="Preview Is ready" src="https://user-images.githubusercontent.com/5378891/72400743-23dbb200-3785-11ea-9d13-1a2d92743846.png">](https://preview-${{ steps.pr.outputs.id }}-ant-design.surge.sh)
-            <!-- AUTO_PREVIEW_HOOK -->
-          body-include: "<!-- AUTO_PREVIEW_HOOK -->"
-          number: ${{ steps.pr.outputs.id }}
+        run: echo "success"
 
       - name: failed comment
         if: needs.build-site.result == 'failure' || needs.preview-deploy.result == 'failure'
-        uses: actions-cool/maintain-one-comment@v3
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-          body: |
-            <img width="534" alt="Preview Failed" src="https://user-images.githubusercontent.com/5378891/75333447-1e63a280-58c1-11ea-975d-235367fd1522.png">
-            <!-- AUTO_PREVIEW_HOOK -->
-          body-include: "<!-- AUTO_PREVIEW_HOOK -->"
-          number: ${{ steps.pr.outputs.id }}
+        run: echo "failed"
