@@ -1,0 +1,113 @@
+name: PR Preview After Test
+
+on:
+  workflow_run:
+    workflows: ["PR Preview"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    if: false
+    steps:
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          run_id: ${{ github.event.workflow_run.id }}
+          name: my-artifact
+          path: ./artifact
+
+      - name: View Directory tree
+        run: |
+          ls -R
+
+  test-action:
+    runs-on: ubuntu-latest
+    if: always() # set "always"
+    steps:
+      - name: Workflow Conclusion Action
+        uses: technote-space/workflow-conclusion-action@45ce8e0eb155657ab8ccf346ade734257fd196a5
+        with:
+          TARGET_RUN_ID: ${{ github.event.workflow_run.id }}
+
+      - name: test failure
+        if: env.WORKFLOW_CONCLUSION == 'failure'
+        run: |
+          echo "failure"
+
+      - name: test success
+        if: env.WORKFLOW_CONCLUSION == 'success'
+        run: |
+          echo "success"
+
+      - name: print conclusion
+        run: |
+          echo ${{ env.WORKFLOW_CONCLUSION }}
+
+      - name: use Script
+        uses: actions/github-script@v6
+        id: summary
+        with:
+          script: |
+            const response = await github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            });
+
+            // { [name]: [conclusion] }
+            const jobs = (response.data?.jobs ?? []).reduce((acc, job) => {
+              if(job?.status === 'completed' && 'name' in job && 'conclusion' in job) {
+                acc[job.name] = job.conclusion;
+              }
+              return acc;
+            }, {});
+
+            const success = [jobs['build preview'], jobs['deploy preview']]
+              .filter(Boolean)
+              .every((conclusion) => conclusion === 'success');
+            const failure = [jobs['build preview'], jobs['deploy preview']]
+              .filter(Boolean)
+              .some((conclusion) => conclusion === 'failure')
+
+            // set output
+            core.setOutput('success', success);
+            core.setOutput('failure', failure && !success);
+            return jobs;
+
+      - name: print jobs
+        continue-on-error: true
+        run: |
+          echo ${{ steps.summary.outputs.result }}
+          echo ${{ toJSON(steps.summary.outputs.result) }}
+
+      - name: success
+        # if: steps.summary.outputs.result['build preview'] == 'success' && steps.summary.outputs.result['deploy preview'] == 'success'
+        # if: steps.summary.outputs.success
+        if: ${{ fromJSON(steps.summary.outputs.success) }}
+        run: |
+          echo "success"
+
+      # - name: success use jq
+      #   if: ${{ steps.summary.outputs.result | jq -e '."build preview" == "success" and ."deploy preview" == "success"' }}
+      #   if: ${{echo toJSON(steps.summary.outputs.result) | jq -e '."build preview" == "success" and ."deploy preview" == "success"' }}
+      #   run: |
+      #     echo "success use jq"
+
+      - name: failed
+        # if: steps.summary.outputs.result['build preview'] == 'failure' || steps.summary.outputs.result['deploy preview'] == 'failure'
+        if: ${{ fromJSON(steps.summary.outputs.failure) }}
+        run: |
+          echo "failed"
+
+      # - name: failed use jq
+      #   if: ${{ toJSON(steps.summary.outputs.result) }} | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"'
+      #   if: ${{ steps.summary.outputs.result | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"' }}
+      #   if: ${{echo toJSON(steps.summary.outputs.result) | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"' }}
+      #   run: |
+      #     echo "failed use jq"
