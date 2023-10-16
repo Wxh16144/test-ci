@@ -1,0 +1,23 @@
+name: Test Checkout Info
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+jobs:
+  test-checkout:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: echo branch name
+        run: echo ${{ github.event.pull_request.head.ref }}
+
+      - name: echo last commit sha
+        run: echo ${{ github.event.pull_request.head.sha }}
+      
+      - name: echo info
+        run: |
+          echo $GITHUB_SHA
+          echo $GITHUB_REF
