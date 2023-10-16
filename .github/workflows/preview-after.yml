@@ -1,0 +1,66 @@
+name: PR Preview After Test
+
+on:
+  workflow_run:
+    workflows: ["PR Preview"]
+    types:
+      - completed
+
+permissions:
+  contents: read
+
+jobs:
+  download:
+    runs-on: ubuntu-latest
+    if: false
+    steps:
+      - name: Download artifact
+        uses: dawidd6/action-download-artifact@v2
+        with:
+          workflow: ${{ github.event.workflow_run.workflow_id }}
+          run_id: ${{ github.event.workflow_run.id }}
+          name: my-artifact
+          path: ./artifact
+
+      - name: View Directory tree
+        run: |
+          ls -R
+
+  test-action:
+    runs-on: ubuntu-latest
+    if: always() # set "always"
+    steps:
+      - name: Workflow Conclusion Action
+        uses: technote-space/workflow-conclusion-action@69935d3f28b21a2e7ad513e43493795cc7224dcc
+        with:
+          TARGET_RUN_ID: ${{ github.event.workflow_run.id }}
+
+      - name: test failure
+        if: env.WORKFLOW_CONCLUSION == 'failure'
+        run: |
+          echo "failure"
+
+      - name: test success
+        if: env.WORKFLOW_CONCLUSION == 'success'
+        run: |
+          echo "success"
+
+      - name: print conclusion
+        run: |
+          echo ${{ env.WORKFLOW_CONCLUSION }}
+
+      - name: use Script
+        uses: actions/github-script@v6
+        id: list_jobs_for_workflow_run
+        with:
+          script: |
+            github.rest.actions.listJobsForWorkflowRun({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              run_id: ${{ github.event.workflow_run.id }}
+            })
+        
+      - name: print jobs
+        run: |
+          echo "${{ steps.list_jobs_for_workflow_run.outputs.data.jobs }}"
+
