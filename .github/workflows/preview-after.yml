@@ -90,7 +90,7 @@ jobs:
       - name: success
         # if: steps.prep-summary.outputs.result['build preview'] == 'success' && steps.prep-summary.outputs.result['deploy preview'] == 'success'
         # if: steps.prep-summary.outputs.success
-        if: ${{ fromJSON(steps.prep-summary.outputs.success) }}
+        if: ${{ fromJSON(steps.prep-summary.outputs.build-success) }}
         run: |
           echo "success"
 
@@ -102,7 +102,7 @@ jobs:
 
       - name: failed
         # if: steps.prep-summary.outputs.result['build preview'] == 'failure' || steps.prep-summary.outputs.result['deploy preview'] == 'failure'
-        if: ${{ fromJSON(steps.prep-summary.outputs.failure) }}
+        if: ${{ fromJSON(steps.prep-summary.outputs.build-failure) }}
         run: |
           echo "failed"
 
