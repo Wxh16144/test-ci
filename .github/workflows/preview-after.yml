@@ -29,6 +29,10 @@ jobs:
   test-action:
     runs-on: ubuntu-latest
     if: always() # set "always"
+    outputs:
+      jobs: ${{ steps.prep-summary.outputs.result }}
+      build-success: ${{ steps.prep-summary.outputs.build-success }}
+      build-failure: ${{ steps.prep-summary.outputs.build-failure }}
     steps:
       - name: Workflow Conclusion Action
         uses: technote-space/workflow-conclusion-action@45ce8e0eb155657ab8ccf346ade734257fd196a5
@@ -49,18 +53,18 @@ jobs:
         run: |
           echo ${{ env.WORKFLOW_CONCLUSION }}
 
-      - name: use Script
+      - name: summary jobs status
         uses: actions/github-script@v6
-        id: summary
+        id: prep-summary
         with:
           script: |
             const response = await github.rest.actions.listJobsForWorkflowRun({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              run_id: ${{ github.event.workflow_run.id }}
+              run_id: ${{ github.event.workflow_run.id }},
             });
 
-            // { [name]: [conclusion] }
+            // { [name]: [conclusion] }, e.g. { 'build preview': 'success' }
             const jobs = (response.data?.jobs ?? []).reduce((acc, job) => {
               if(job?.status === 'completed' && 'name' in job && 'conclusion' in job) {
                 acc[job.name] = job.conclusion;
@@ -68,46 +72,64 @@ jobs:
               return acc;
             }, {});
 
-            const success = [jobs['build preview'], jobs['deploy preview']]
-              .filter(Boolean)
-              .every((conclusion) => conclusion === 'success');
-            const failure = [jobs['build preview'], jobs['deploy preview']]
-              .filter(Boolean)
-              .some((conclusion) => conclusion === 'failure')
+            const total = Object.keys(jobs).length;
+            if(total === 0) core.setFailed('no jobs found');
 
+            // the name here must be the same as `jobs.xxx.{name}` in preview-build.yml
             // set output
-            core.setOutput('success', success);
-            core.setOutput('failure', failure && !success);
+            core.setOutput('build-success', jobs['build preview'] === 'success');
+            core.setOutput('build-failure', jobs['build preview'] === 'failure');
             return jobs;
 
       - name: print jobs
         continue-on-error: true
         run: |
-          echo ${{ steps.summary.outputs.result }}
-          echo ${{ toJSON(steps.summary.outputs.result) }}
+          echo ${{ steps.prep-summary.outputs.result }}
+          echo ${{ toJSON(steps.prep-summary.outputs.result) }}
 
       - name: success
-        # if: steps.summary.outputs.result['build preview'] == 'success' && steps.summary.outputs.result['deploy preview'] == 'success'
-        # if: steps.summary.outputs.success
-        if: ${{ fromJSON(steps.summary.outputs.success) }}
+        # if: steps.prep-summary.outputs.result['build preview'] == 'success' && steps.prep-summary.outputs.result['deploy preview'] == 'success'
+        # if: steps.prep-summary.outputs.success
+        if: ${{ fromJSON(steps.prep-summary.outputs.success) }}
         run: |
           echo "success"
 
       # - name: success use jq
-      #   if: ${{ steps.summary.outputs.result | jq -e '."build preview" == "success" and ."deploy preview" == "success"' }}
-      #   if: ${{echo toJSON(steps.summary.outputs.result) | jq -e '."build preview" == "success" and ."deploy preview" == "success"' }}
+      #   if: ${{ steps.prep-summary.outputs.result | jq -e '."build preview" == "success" and ."deploy preview" == "success"' }}
+      #   if: ${{echo toJSON(steps.prep-summary.outputs.result) | jq -e '."build preview" == "success" and ."deploy preview" == "success"' }}
       #   run: |
       #     echo "success use jq"
 
       - name: failed
-        # if: steps.summary.outputs.result['build preview'] == 'failure' || steps.summary.outputs.result['deploy preview'] == 'failure'
-        if: ${{ fromJSON(steps.summary.outputs.failure) }}
+        # if: steps.prep-summary.outputs.result['build preview'] == 'failure' || steps.prep-summary.outputs.result['deploy preview'] == 'failure'
+        if: ${{ fromJSON(steps.prep-summary.outputs.failure) }}
         run: |
           echo "failed"
 
       # - name: failed use jq
-      #   if: ${{ toJSON(steps.summary.outputs.result) }} | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"'
-      #   if: ${{ steps.summary.outputs.result | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"' }}
-      #   if: ${{echo toJSON(steps.summary.outputs.result) | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"' }}
+      #   if: ${{ toJSON(steps.prep-summary.outputs.result) }} | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"'
+      #   if: ${{ steps.prep-summary.outputs.result | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"' }}
+      #   if: ${{echo toJSON(steps.prep-summary.outputs.result) | jq -e '."build preview" == "failure" or ."deploy preview" == "failure"' }}
       #   run: |
       #     echo "failed use jq"
+  end:
+    runs-on: ubuntu-latest
+    needs: [test-action]
+    steps:
+      - name: print conclusion
+        continue-on-error: true
+        run: |
+          echo ${{ needs.test-action.outputs.build-success }}
+          echo ${{ needs.test-action.outputs.build-failure }}
+          echo ${{ toJSON(needs.test-action.outputs.jobs) }}
+          echo ${{ toJSON(needs.test-action.outputs) }}
+
+      - name: success
+        if: ${{ needs.test-action.outputs.build-success }}
+        run: |
+          echo "success"
+
+      - name: failed
+        if: ${{ needs.test-action.outputs.build-failure }}
+        run: |
+          echo "failed"
