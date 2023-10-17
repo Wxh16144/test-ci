@@ -125,11 +125,11 @@ jobs:
           echo ${{ toJSON(needs.test-action.outputs) }}
 
       - name: success
-        if: ${{ needs.test-action.outputs.build-success }}
+        if: ${{ fromJSON(needs.test-action.outputs.build-success) }}
         run: |
           echo "success"
 
       - name: failed
-        if: ${{ needs.test-action.outputs.build-failure }}
+        if: ${{ fromJSON(needs.test-action.outputs.build-failure) }}
         run: |
           echo "failed"
