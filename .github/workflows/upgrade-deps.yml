@@ -12,6 +12,7 @@ jobs:
     if: github.ref == 'refs/heads/master'
     permissions:
       pull-requests: write  # for peter-evans/create-pull-request to create PRs
+      contents: write       # for git push
     steps:
       - name: checkout
         uses: actions/checkout@v4
@@ -31,17 +32,16 @@ jobs:
         run: |
           result=$(npx npm-check-updates -u --jsonUpgraded) 2>&1 || true
           jsonStr=$(echo "$result" | jq -c . | jq -R .)
-          echo "$jsonStr" >> $GITHUB_STEP_SUMMARY
           echo "result=$jsonStr" >> $GITHUB_OUTPUT
 
       - name: check if package.json changed
         id: check
         run: |
           if [[ -z $(git status -s package.json) ]]; then
-            echo "no change"
+            echo "### changed :robot:" >> $GITHUB_STEP_SUMMARY
             echo "changed=false" >> $GITHUB_OUTPUT
           else
-            echo "changed"
+            echo "### not changed :robot:" >> $GITHUB_STEP_SUMMARY
             echo "changed=true" >> $GITHUB_OUTPUT
           fi
 
@@ -52,15 +52,14 @@ jobs:
           echo "name=upgrade-deps/patch-$(date +%Y%m%d_%H_%M)" >> $GITHUB_OUTPUT
 
       - name: commit changes
-        if: ${{ fromJSON(steps.check.outputs.changed) }}
+        if: ${{ steps.check.outputs.changed == 'true' }}
         id: commit
         run: |
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
           git add package.json
           git commit -m "chore: upgrade deps"
-          git push origin HEAD:${{ fromJSON(steps.branch.outputs.name) }}
-
+          git push origin HEAD:${{ steps.branch.outputs.name }}
 
       - name: create pull request
         if: ${{ steps.commit.outcome == 'success' }}
@@ -68,7 +67,8 @@ jobs:
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # Cannot be default!!!
-          assignees: 'afc163, zombieJ, xrkffgg, MadCcc'
+          # assignees: 'afc163, zombieJ, xrkffgg, MadCcc'
+          assignees: 'Wxh16144'
           title: 'chore: upgrade deps'
           body: |
             Upgrade dependencies
@@ -76,5 +76,5 @@ jobs:
             ```json
             ${{ fromJSON(steps.upgrade.outputs.result) }}
             ```
-          branch: ${{ fromJSON(steps.branch.outputs.name) }}
+          branch: ${{ steps.branch.outputs.name }}
           delete-branch: true
