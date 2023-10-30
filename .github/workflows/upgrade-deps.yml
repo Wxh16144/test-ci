@@ -58,6 +58,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git add package.json
           git commit -m "chore: upgrade deps"
+          git push origin HEAD:${{ fromJSON(steps.branch.outputs.name) }}
 
 
       - name: create pull request
