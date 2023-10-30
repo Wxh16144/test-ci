@@ -9,6 +9,7 @@ on:
 jobs:
   upgrade-deps:
     runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/master'
     permissions:
       pull-requests: write  # for peter-evans/create-pull-request to create PRs
     steps:
@@ -28,7 +29,7 @@ jobs:
       - name: upgrade deps
         id: upgrade
         run: |
-          result=$(npx npm-check-updates --jsonUpgraded) 2>&1 || true
+          result=$(npx npm-check-updates -u --jsonUpgraded) 2>&1 || true
           echo "$result" >> $GITHUB_STEP_SUMMARY
           echo "upgrade-result=$result" >> $GITHUB_OUTPUT
 

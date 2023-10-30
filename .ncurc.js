@@ -1,5 +1,3 @@
-// eslint-disable-next-line import/no-extraneous-dependencies
-const isCI = require('is-ci');
 const path = require('path');
 
 // https://github.com/react-component/
@@ -8,7 +6,7 @@ const check = ['@ant-design/', ...rcOrg];
 
 module.exports = {
   packageFile: path.resolve(__dirname, './package.json'),
-  upgrade: isCI, // or `npx npm-check-updates -u`
+  upgrade: false, // use `npx npm-check-updates -u` to upgrade
   target: 'latest', // always latest
   packageManager: 'npm',
   // https://github.com/raineorshine/npm-check-updates#filter
