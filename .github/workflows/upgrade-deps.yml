@@ -31,6 +31,7 @@ jobs:
         run: |
           result=$(npx npm-check-updates -u --jsonUpgraded) 2>&1 || true
           jsonStr=$(echo "$result" | jq -c . | jq -R .)
+          echo "$jsonStr" >> $GITHUB_STEP_SUMMARY
           echo "result=$jsonStr" >> $GITHUB_OUTPUT
 
       - name: check if package.json changed
