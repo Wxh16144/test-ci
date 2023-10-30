@@ -1,0 +1,77 @@
+name: Upgrade Dependencies
+
+on:
+  schedule:
+    - cron: "0 18 * * *" # every day at 18:00 UTC
+    # - timezone: Asia/Shanghai # not supported yet https://github.com/orgs/community/discussions/13454
+  workflow_dispatch:
+
+jobs:
+  upgrade-deps:
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write  # for peter-evans/create-pull-request to create PRs
+    steps:
+      - name: checkout
+        uses: actions/checkout@v4
+        with:
+          sparse-checkout: |
+            .github
+            .ncurc.js
+            package.json
+
+      - name: setup node
+        uses: actions/setup-node@v3
+        with:
+          node-version: 18
+
+      - name: upgrade deps
+        id: upgrade
+        run: |
+          result=$(npx npm-check-updates --jsonUpgraded) 2>&1 || true
+          echo "$result" >> $GITHUB_STEP_SUMMARY
+          echo "upgrade-result=$result" >> $GITHUB_OUTPUT
+
+      - name: check if package.json changed
+        id: check
+        run: |
+          if [[ -z $(git status -s package.json) ]]; then
+            echo "no change"
+            echo "changed=false" >> $GITHUB_OUTPUT
+          else
+            echo "changed"
+            echo "changed=true" >> $GITHUB_OUTPUT
+          fi
+
+      - name: gen branch name
+        if: ${{ always() }}
+        id: branch
+        run: |
+          echo "name=upgrade-deps/patch-$(date +%Y%m%d_%H_%M)" >> $GITHUB_OUTPUT
+
+      - name: commit changes
+        if: ${{ fromJSON(steps.check.outputs.changed) }}
+        id: commit
+        run: |
+          git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add package.json
+          git commit -m "chore: upgrade deps"
+
+
+      - name: create pull request
+        if: ${{ steps.commit.outcome == 'success' }}
+        id: cpr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Cannot be default!!!
+          assignees: 'afc163, zombieJ, xrkffgg, MadCcc'
+          title: 'chore: upgrade deps'
+          body: |
+            Upgrade dependencies
+
+            ```json
+            ${{ fromJSON(steps.upgrade.outputs.upgrade-result) }}
+            ```
+          branch: ${{ fromJSON(steps.branch.outputs.name) }}
+          delete-branch: true
