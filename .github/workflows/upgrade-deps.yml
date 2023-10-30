@@ -30,8 +30,8 @@ jobs:
         id: upgrade
         run: |
           result=$(npx npm-check-updates -u --jsonUpgraded) 2>&1 || true
-          echo "$result" >> $GITHUB_STEP_SUMMARY
-          echo "upgrade-result=$result" >> $GITHUB_OUTPUT
+          jsonStr=$(echo "$result" | jq -c . | jq -R .)
+          echo "result=$jsonStr" >> $GITHUB_OUTPUT
 
       - name: check if package.json changed
         id: check
@@ -73,7 +73,7 @@ jobs:
             Upgrade dependencies
 
             ```json
-            ${{ fromJSON(steps.upgrade.outputs.upgrade-result) }}
+            ${{ fromJSON(steps.upgrade.outputs.result) }}
             ```
           branch: ${{ fromJSON(steps.branch.outputs.name) }}
           delete-branch: true
