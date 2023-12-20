@@ -76,7 +76,7 @@ jobs:
               pull_number: context.issue.number
             })
 
-            # set the output variable
+            // set the output variable
             core.setOutput("head_name", response.data.head.ref ?? response.data.head.sha)
             core.setOutput("base_name", response.data.base.ref ?? response.data.base.sha)
        
