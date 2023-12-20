@@ -76,7 +76,7 @@ jobs:
             core.setOutput("base_name", response.data.base.ref ?? response.data.base.sha)
       - uses: actions/checkout@v4
         with:
-          ref: ${{ steps.pr_info.outputs.head_name }}
+          ref: ${{ steps.pr_info.outputs.base_name }}
 
       - name: create pull request
         id: cpr
