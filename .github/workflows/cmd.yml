@@ -69,39 +69,21 @@ jobs:
               owner: context.repo.owner,
               repo: context.repo.repo,
               pull_number: context.issue.number
-            });
-
-            const head_name = response.data.head.ref ?? response.data.head.sha
-            const base_name = response.data.base.ref ?? response.data.base.sha
-
-            // 创建分支
-            const pr_branch = `auto-cherry-pick/${head_name}`
-            await github.rest.git.createRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              name: `refs/heads/${pr_branch}`,
-              oid: response.data.head.sha
             })
 
-            // 创建 PR
-            const pr = await github.rest.pulls.create({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              title: `chore: cherry pick #${context.issue.number} to ${context.payload.comment.body}`,
-              head: pr_branch,
-              base: ${{ needs.check_comments.outputs.command-arguments }}
-            })
+            // set the output variable
+            core.setOutput("head_name", response.data.head.ref ?? response.data.head.sha)
+            core.setOutput("base_name", response.data.base.ref ?? response.data.base.sha)
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ steps.pr_info.outputs.head_name }}
 
-      # - uses: actions/checkout@v4
-      #   with:
-      #     ref: ${{ steps.pr_info.outputs.head_name }}
-
-      # - name: create pull request
-      #   id: cpr
-      #   uses: peter-evans/create-pull-request@v5
-      #   with:
-      #     token: ${{ secrets.GITHUB_TOKEN }} # Cannot be default!!!
-      #     title: "chore: cherry pick #${{ github.event.issue.number }} to ${{ needs.check_comments.outputs.command-arguments }}"
-      #     # 当前 pr 的分支名称
-      #     branch: auto-cherry-pick/${{ steps.pr_info.outputs.head_name }}
-      #     base: ${{ needs.check_comments.outputs.command-arguments }}
+      - name: create pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Cannot be default!!!
+          title: "chore: cherry pick #${{ github.event.issue.number }} to ${{ needs.check_comments.outputs.command-arguments }}"
+          # 当前 pr 的分支名称
+          branch: auto-cherry-pick/${{ steps.pr_info.outputs.head_name }}
+          base: ${{ needs.check_comments.outputs.command-arguments }}
