@@ -74,24 +74,23 @@ jobs:
             const head_name = response.data.head.ref ?? response.data.head.sha
             const base_name = response.data.base.ref ?? response.data.base.sha
 
-            // 创建分支
-            const pr_branch = `auto-cherry-pick/${head_name}`
+            // 从 head_name 创建一个新的分支
+            const branch_name = `auto-cherry-pick/${head_name}`
             await github.rest.git.createRef({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              name: `refs/heads/${pr_branch}`,
-              oid: response.data.head.sha
+              ref: `refs/heads/${branch_name}`,
+              sha: response.data.head.sha
             })
 
-            // 创建 PR
+            // 创建一个新的 pr 到 command-arguments 分支 
             const pr = await github.rest.pulls.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `chore: cherry pick #${context.issue.number} to ${context.payload.comment.body}`,
-              head: pr_branch,
+              title: `chore: cherry pick #${context.issue.number} to ${{ needs.check_comments.outputs.command-arguments}}`,
+              head: branch_name,
               base: ${{ needs.check_comments.outputs.command-arguments }}
             })
-
       # - uses: actions/checkout@v4
       #   with:
       #     ref: ${{ steps.pr_info.outputs.head_name }}
