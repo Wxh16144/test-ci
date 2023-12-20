@@ -9,6 +9,9 @@ jobs:
     name: Check comments for /cherry_pick
     runs-on: ubuntu-latest
     if: ${{ github.event.issue.pull_request }}
+    outputs: 
+      command-name: ${{ steps.command.outputs.command-name }}
+      command-arguments: ${{ steps.command.outputs.command-arguments }}
     steps:
       - name: Check for Command
         id: command
