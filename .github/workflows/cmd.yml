@@ -60,8 +60,6 @@ jobs:
     needs: check_comments
     if: ${{ needs.check_comments.outputs.command-name == 'cherry_pick' && needs.check_comments.outputs.command-arguments != '' }}
     steps:
-
-
       - name: get PR details
         id: pr_info
         uses: actions/github-script@v6
@@ -82,13 +80,21 @@ jobs:
         with:
           ref: ${{ steps.pr_info.outputs.head_name }}
 
+      - name: branch-name
+        id: branch-name
+        run: |
+         echo "name=auto-cherry-pick/${{ steps.pr_info.outputs.head_name }}" >> $GITHUB_OUTPUT
+
+      - name: Rename branch
+        run: |
+          git push origin HEAD:${{ steps.pr_info.outputs.branch-name.name }}
+
       - name: create pull request
         id: cpr
         uses: peter-evans/create-pull-request@v5
         with:
           token: ${{ secrets.GITHUB_TOKEN }} # Cannot be default!!!
-          # branch: auto-cherry-pick-${{ github.event.issue.number }}
           title: "chore: cherry pick #${{ github.event.issue.number }} to ${{ needs.check_comments.outputs.command-arguments }}"
           # 当前 pr 的分支名称
-          branch: auto-cherry-pick/${{ steps.pr_info.outputs.head_name }}
+          branch: ${{ steps.pr_info.outputs.branch-name.name }}
           base: ${{ needs.check_comments.outputs.command-arguments }}
