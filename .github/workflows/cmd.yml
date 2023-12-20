@@ -60,6 +60,8 @@ jobs:
     needs: check_comments
     if: ${{ needs.check_comments.outputs.command-name == 'cherry_pick' && needs.check_comments.outputs.command-arguments != '' }}
     steps:
+      - uses: actions/checkout@v4
+
       - name: get PR details
         id: pr_info
         uses: actions/github-script@v6
