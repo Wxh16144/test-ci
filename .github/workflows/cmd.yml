@@ -1,0 +1,44 @@
+name: Commands Action
+
+on: issue_comment
+
+permissions: write-all
+
+jobs:
+  check_comments:
+    name: Check comments for /cherry_pick
+    runs-on: ubuntu-latest
+    if: ${{ github.event.issue.pull_request }}
+    steps:
+      - name: Check for Command
+        id: command
+        uses: xt0rted/slash-command-action@v1
+        with:
+          command: cherry_pick
+          reaction: "true"
+          reaction-type: "eyes"
+          allow-edits: "false"
+          repo-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Echo Command
+        run: echo "The command was '${{ steps.command.outputs.command-name }}' with arguments '${{ steps.command.outputs.command-arguments }}'"
+
+  cherry_pick_command:
+    name: Cherry Pick Command
+    runs-on: ubuntu-latest
+    needs: check_comments
+    if: ${{ needs.check_comments.outputs.command-name == 'cherry_pick' && needs.check_comments.outputs.command-arguments != '' }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.issue.pull_request.head.sha }}
+
+      - name: create pull request
+        id: cpr
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }} # Cannot be default!!!
+          branch: auto-cherry-pick-${{ github.event.issue.number }}
+          # base: ${{ github.event.issue.pull_request.base.ref }}
+          base: ${{ needs.check_comments.outputs.command-arguments }}
