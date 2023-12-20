@@ -89,7 +89,7 @@ jobs:
               repo: context.repo.repo,
               title: `chore: cherry pick #${context.issue.number} to ${{ needs.check_comments.outputs.command-arguments}}`,
               head: branch_name,
-              base: ${{ needs.check_comments.outputs.command-arguments }}
+              base: `${{ needs.check_comments.outputs.command-arguments }}`
             })
       # - uses: actions/checkout@v4
       #   with:
