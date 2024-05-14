@@ -1,0 +1,22 @@
+name: CI Notice
+
+on:
+  schedule:
+    - cron: '* * * * *'
+  workflow_dispatch:
+
+jobs:
+  setup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: checkout
+        uses: actions/checkout@main
+
+      - uses: actions-cool/ci-notice@v1
+        with:
+          ci: |
+            echo "CI Notice"
+            exit 1
+          notice-types: 'dingding, issue'
+          dingding-token: "unknown"
+          issue-assignees: 'Wxh16144'
