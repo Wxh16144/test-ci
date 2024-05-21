@@ -1,8 +1,8 @@
 name: Issues Comment
 
 on:
-  issues:
-    types: [opened, edited, deleted]
+  issue_comment:
+    types: [created, edited, deleted]
 
 jobs:
   upgrade-deps:
