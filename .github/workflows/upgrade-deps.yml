@@ -9,7 +9,7 @@ on:
 jobs:
   upgrade-deps:
     runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/master'
+    if: github.ref == 'refs/heads/master' && false
     permissions:
       pull-requests: write # for peter-evans/create-pull-request to create PRs
       contents: write # for git push
