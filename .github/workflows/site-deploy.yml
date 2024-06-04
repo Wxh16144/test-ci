@@ -35,6 +35,10 @@ jobs:
           fi
 
           echo "tags=$tags" >> $GITHUB_OUTPUT
+
+      - name: print tags
+        run: echo ${{ steps.build-docker-version.outputs.tags }}
+        
   setup:
     runs-on: ubuntu-latest
     if: false
