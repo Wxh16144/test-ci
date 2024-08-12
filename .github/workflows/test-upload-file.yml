@@ -16,6 +16,10 @@ jobs:
           echo "Hello world" > ./artifact/hello.txt
           echo "Hello world2" > ./artifact/hello2.txt
 
+      - name: Write _config.yml (temporary)
+        run: |
+          echo "include: [/_*.*]" >> ./artifact/_config.yml
+
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
