@@ -16,7 +16,9 @@ jobs:
       
       - name: Build tarball
         run: |
-          tar -czf ./website.tar.gz --transform 's|^|${{ github.ref_name}}/|' docs
+          cd ./docs
+          tar -czf ../website.tar.gz --transform 's|^|antd-${{ github.ref_name}}-website/|' .
+          cd ..
 
       - name: Test
         run: |
