@@ -13,23 +13,46 @@ jobs:
         uses: actions/checkout@v4
       - name: Build
         run: echo ${{ github.sha }} > Release.txt
-      
+
       - name: Build tarball
         run: |
           cd ./docs
           tar -czf ../website.tar.gz --transform 's|^|antd-${{ github.ref_name}}-website/|' .
           cd ..
 
+      - name: upload site artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: real-site
+          path: website.tar.gz
+          retention-days: 1 # Not need to keep for too long
+
+  review:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: real-site
+
       - name: Test
         run: |
-          cat Release.txt
-          ls -R
+          # 列出文件（包扩信息）
+          ls -l
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: real-site
 
       - name: Release
         uses: softprops/action-gh-release@v2
         if: startsWith(github.ref, 'refs/tags/')
         with:
           fail_on_unmatched_files: true
-          files:  |
-            Release.txt
-            website.tar.gz
+          files: website.tar.gz
