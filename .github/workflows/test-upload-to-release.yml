@@ -17,7 +17,8 @@ jobs:
       - name: Build tarball
         run: |
           cd ./docs
-          tar -czf ../website.tar.gz --transform 's|^|antd-${{ github.ref_name}}-website/|' .
+          export FORMAT_VERSION=$(echo ${{ github.ref }} | sed 's/refs\/tags\/v//')
+          tar -czf ../website.tar.gz --transform 's|^|antd-${FORMAT_VERSION}-website/|' .
           cd ..
 
       - name: upload site artifact
