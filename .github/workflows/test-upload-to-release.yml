@@ -1,16 +1,12 @@
 name: Uploading Release assets
 
-# 这里参考 antd https://github.com/ant-design/ant-design/blob/master/.github/workflows/site-deploy.yml
 on:
   push:
     tags:
-      - '5.*'
-  workflow_dispatch:
+      - "v*.*.*"
 
 jobs:
   build:
-    # 看起来是在 tag 的时候触发，或者手动触发才会执行
-    if: (startsWith(github.ref, 'refs/tags/') && (contains(github.ref_name, '-') == false)) || github.event_name == 'workflow_dispatch'
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -44,15 +40,9 @@ jobs:
         run: |
           # 列出文件（包扩信息）
           ls -l
-      - name: print github context
-        run: |
-          echo ${{ toJson(github) }}
 
   release:
     runs-on: ubuntu-latest
-    # 仅在 tag 的时候触发，因为我们要将内容发布到 release 中
-    if: startsWith(github.ref, 'refs/tags/')
-    # 这里加一个 needs，表示依赖 build job。这样就可以在 release job 中使用 build job 生成的 artifact 了
     needs: build
     steps:
       - name: Download artifact
