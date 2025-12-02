@@ -1,6 +1,13 @@
 name: Trigger Argos manually
 
-on: workflow_dispatch
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: 'The git ref to trigger the workflow on'
+        required: false
+        default: 'master'
+        type: string
 
 jobs:
   trigger_argos_manually:
@@ -9,12 +16,27 @@ jobs:
       actions: write
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-        
-      - name: Trigger Argos manually
+      - name: Checkout repository
+        uses: actions/checkout@v6
+
+      - run: corepack enable
+      - uses: utooland/setup-utoo@v1
+
+      - name: Set package version
         run: |
-          git config --local user.name 'github-actions[bot]'
-          git config --local user.email 'github-actions[bot]@users.noreply.github.com'
-          git commit --allow-empty -m "Trigger Argos manually"
-          git push
+          BRANCH_TYPE="${{ github.base_ref || inputs.ref }}"
+          if [[ "$BRANCH_TYPE" == "next" ]]; then
+            INC_TYPE="premajor"
+          elif [[ "$BRANCH_TYPE" == "feature" ]]; then
+            INC_TYPE="preminor"
+          else
+            INC_TYPE="prepatch"
+          fi
+
+          CURRENT_VERSION=$(jq -r '.version' package.json)
+          SORTED_SHA=${GITHUB_SHA::7}
+          NEXT_VERSION=$(utx semver --inc="$INC_TYPE" --preid="canary.$SORTED_SHA" -n=false "$CURRENT_VERSION")
+
+          echo "Setting package version to $NEXT_VERSION"
+          jq --arg ver "$NEXT_VERSION" '.version = $ver' package.json > package.tmp.json
+          mv package.tmp.json package.json
